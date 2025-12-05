@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Rechnungs-App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#000;color:#fff}
+header{padding:10px;border-bottom:2px solid #333}
+input,textarea,button{background:#111;color:#fff;border:1px solid #444;border-radius:6px;padding:6px;font-size:12px}
+button{cursor:pointer}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.col{flex:1}
+h2{margin:6px 0}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border-bottom:1px solid #222;padding:6px;font-size:11px;text-align:left}
+th{color:#bbb;background:#111;position:sticky;top:0}
+.actions{display:flex;gap:6px;margin-top:10px}
+.small{font-size:10px;color:#bbb}
+#listView{display:none}
+.selected{background:#0b2a4a}
+
+#mwst[disabled]{opacity:0.5}
+</style>
+
+</head>
+<body>
+
+<header class="row">
+  <button onclick="showEditor()">Neue Rechnung</button>
+  <input id="search" placeholder="Rechnung suchen…" oninput="renderList()">
+</header>
+
+<div id="listView" style="padding:10px">
+  <table>
+    <thead>
+      <tr>
+        <th>Nr</th>
+        <th>Datum</th>
+        <th>Empfänger</th>
+        <th>Summe</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="listBody"></tbody>
+  </table>
+</div>
+
+<div id="editor" style="padding:10px">
+  <div class="row">
+    <div class="col">
+      <label class="small">Rechnungsnummer</label>
+      <input id="invNr">
+    </div>
+    <div class="col">
+      <label class="small">Datum</label>
+      <input type="date" id="invDate">
+    </div>
+  </div>
+
+  <h2>Empfänger</h2>
+  <textarea id="address" rows="4" style="width:100%" placeholder="Name&#10;Straße Nr.&#10;PLZ Ort&#10;Land"></textarea>
+
+  <h2>Positionen</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Artikel</th>
+        <th>Menge</th>
+        <th>Preis</th>
+        <th>Gesamt</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="posBody"></tbody>
+  </table>
+
+  <button onclick="addRow()">+ Position</button>
+
+  <div class="row" style="margin-top:10px">
+    <div class="col">
+      <label class="small">Versand (€)</label>
+      <input id="shipping" value="0" onblur="calcTotals()">
+    </div>
+    <div class="col">
+      <label class="small">MwSt %</label>
+      <div class="row">
+        <input id="mwst" value="19" onblur="calcTotals()" style="flex:1">
+        <label class="small" style="display:flex;align-items:center;gap:4px;">
+          <input type="checkbox" id="mwstToggle" onchange="toggleMwst()"> MwSt aktiv
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:6px">
+    <div class="small">Zwischensumme: <span id="subSum">0.00</span> €</div>
+    <div class="small">MwSt: <span id="mwstSum">0.00</span> €</div>
+    <div><b>Gesamt: <span id="totalSum">0.00</span> €</b></div>
+  </div>
+
+  <h2>Firmenangaben</h2>
+  <textarea id="company" rows="3" style="width:100%" placeholder="Firmenname&#10;Adresse&#10;Kontakt"></textarea>
+  <input id="ustid" placeholder="USt-ID / Steuernummer">
+
+  <div class="actions">
+    <button onclick="saveInvoice()">Speichern</button>
+    <button onclick="showList()">Zur Liste</button>
+  </div>
+</div>
+
+<script>
+let invoices = JSON.parse(localStorage.getItem("invoices") || "[]");
+let editIndex = -1;
+
+function nextNr(){
+  const last = parseInt(localStorage.getItem("invoiceCounter") || "0",10) + 1;
+  localStorage.setItem("invoiceCounter", last);
+  return String(last).padStart(5,"0");
+}
+
+function showEditor(){
+  document.getElementById("listView").style.display = "none";
+  document.getElementById("editor").style.display = "block";
+  editIndex = -1;
+
+  document.getElementById("invNr").value = nextNr();
+  document.getElementById("invDate").valueAsDate = new Date();
+  document.getElementById("address").value = "";
+  document.getElementById("shipping").value = 0;
+  document.getElementById("mwst").value = 19; applyMwstSetting();
+  document.getElementById("company").value = "";
+  document.getElementById("ustid").value = "";
+
+  document.getElementById("posBody").innerHTML = "";
+  addRow();
+}
+
+function showList(){
+  document.getElementById("editor").style.display = "none";
+  document.getElementById("listView").style.display = "block";
+  renderList();
+}
+
+function addRow(data={name:"",menge:1,preis:0}){
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input value="${data.name}"></td>
+    <td><input type="number" value="${data.menge}" onblur="calcTotals()"></td>
+    <td><input type="number" value="${data.preis}" onblur="calcTotals()"></td>
+    <td class="sum">0.00</td>
+    <td><button onclick="this.closest('tr').remove();calcTotals()">✕</button></td>
+  `;
+  document.getElementById("posBody").appendChild(tr);
+  calcTotals();
+}
+
+function calcTotals(){
+  let sum = 0;
+  document.querySelectorAll("#posBody tr").forEach(tr=>{
+    const m = parseFloat(tr.children[1].children[0].value)||0;
+    const p = parseFloat(tr.children[2].children[0].value)||0;
+    const g = m*p;
+    tr.querySelector(".sum").innerText = g.toFixed(2);
+    sum += g;
+  });
+
+  const ship = parseFloat(document.getElementById("shipping").value)||0;
+  const mwActive = document.getElementById('mwstToggle')?.checked;
+  const mw = mwActive ? (parseFloat(document.getElementById("mwst").value)||0) : 0;
+
+  document.getElementById("subSum").innerText = sum.toFixed(2);
+  const mwVal = sum * mw / 100;
+  document.getElementById("mwstSum").innerText = mwVal.toFixed(2);
+  document.getElementById("totalSum").innerText = (sum + mwVal + ship).toFixed(2);
+}
+
+function saveInvoice(){
+  const inv = {
+    nr: document.getElementById("invNr").value,
+    date: document.getElementById("invDate").value,
+    address: document.getElementById("address").value,
+    shipping: document.getElementById("shipping").value,
+    mwst: document.getElementById("mwst").value,
+    company: document.getElementById("company").value,
+    ustid: document.getElementById("ustid").value,
+    positions: [],
+    total: document.getElementById("totalSum").innerText
+  };
+
+  document.querySelectorAll("#posBody tr").forEach(tr=>{
+    inv.positions.push({
+      name: tr.children[0].children[0].value,
+      menge: tr.children[1].children[0].value,
+      preis: tr.children[2].children[0].value,
+      gesamt: tr.children[3].innerText
+    });
+  });
+
+  if(editIndex>=0) invoices[editIndex] = inv;
+  else invoices.push(inv);
+
+  localStorage.setItem("invoices", JSON.stringify(invoices));
+  showList();
+}
+
+function renderList(){
+  const q = document.getElementById("search").value.toLowerCase();
+  const body = document.getElementById("listBody");
+  body.innerHTML = "";
+
+  invoices.forEach((i,idx)=>{
+    if(q && !(
+      i.nr.includes(q) ||
+      i.address.toLowerCase().includes(q)
+    )) return;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i.nr}</td>
+      <td>${i.date}</td>
+      <td>${i.address.split('\n')[0]}</td>
+      <td>${i.total} €</td>
+      <td>
+        <button onclick="editInv(${idx})">✏️</button>
+      </td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function editInv(i){
+  const inv = invoices[i];
+  editIndex = i;
+  showEditor();
+
+  document.getElementById("invNr").value = inv.nr;
+  document.getElementById("invDate").value = inv.date;
+  document.getElementById("address").value = inv.address;
+  document.getElementById("shipping").value = inv.shipping;
+  document.getElementById("mwst").value = inv.mwst;
+  document.getElementById("company").value = inv.company;
+  document.getElementById("ustid").value = inv.ustid;
+
+  document.getElementById("posBody").innerHTML = "";
+  inv.positions.forEach(p=>addRow(p));
+  calcTotals();
+}
+
+const pending = JSON.parse(localStorage.getItem("pendingInvoiceData") || "null");
+if(pending){
+  showEditor();
+  addRow(pending);
+  localStorage.removeItem("pendingInvoiceData");
+}else{
+  showList();
+  setTimeout(applyMwstSetting, 0);
+}
+
+function toggleMwst(){
+  const on = document.getElementById('mwstToggle').checked;
+  localStorage.setItem('mwstActive', on ? "1" : "0");
+  calcTotals();
+}
+
+function applyMwstSetting(){
+  const on = localStorage.getItem('mwstActive') === "1";
+  const t = document.getElementById('mwstToggle');
+  if(t) t.checked = on;
+}
+
+</script>
+
+</body>
+</html>
