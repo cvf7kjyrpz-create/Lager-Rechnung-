@@ -405,9 +405,7 @@ btnCancel.onclick = () => {
 };
 
 btnSave.onclick = () => {
-  autoBackup("speichern");
   if (editIndex === -1){
-    // neuer Artikel
     const nextNr     = commitNextArtNr();
     const artnrInput = p_artnr.value.trim();
     const artnrFinal = artnrInput || nextNr;
@@ -429,14 +427,24 @@ btnSave.onclick = () => {
     const file = p_bild.files[0];
     if(file){
       const r = new FileReader();
-      r.onload = e => { obj.bild = e.target.result; pushNew(obj); };
+      r.onload = e => {
+        obj.bild = e.target.result;
+        artikel.push(obj);
+        localStorage.setItem("lagerData", JSON.stringify(artikel));
+        popup.style.display = "none";
+        editIndex = -1;
+        renderTable();
+      };
       r.readAsDataURL(file);
     } else {
-      pushNew(obj);
+      artikel.push(obj);
+      localStorage.setItem("lagerData", JSON.stringify(artikel));
+      popup.style.display = "none";
+      editIndex = -1;
+      renderTable();
     }
 
   } else {
-    // Bearbeiten
     const alt = artikel[editIndex];
     const artnrInput = p_artnr.value.trim();
     const obj = {
@@ -456,19 +464,21 @@ btnSave.onclick = () => {
     const file = p_bild.files[0];
     if(file){
       const r = new FileReader();
-      
       r.onload = e => {
         obj.bild = e.target.result;
-        if(editIndex === -1){
-          pushNew(obj);
-        } else {
-          applyEdit(obj);
-        }
+        artikel[editIndex] = obj;
+        localStorage.setItem("lagerData", JSON.stringify(artikel));
+        popup.style.display = "none";
+        editIndex = -1;
+        renderTable();
       };
-    
       r.readAsDataURL(file);
     } else {
-      applyEdit(obj);
+      artikel[editIndex] = obj;
+      localStorage.setItem("lagerData", JSON.stringify(artikel));
+      popup.style.display = "none";
+      editIndex = -1;
+      renderTable();
     }
   }
 };
