@@ -9,13 +9,13 @@
 body{margin:0;background:#000;color:white;font-family:Arial,sans-serif;overflow:hidden;overscroll-behavior:none;}
 #topbar{position:fixed;top:0;left:0;right:0;padding:15px;background:#000;z-index:5000;border-bottom:2px solid #333;}
 #counterWrapper{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
-.counter-box{padding:10px;border:1px solid #444;border-radius:10px;background:#000;}
+.counter-box{padding:6px;border:1px solid #444;border-radius:8px;background:#000;}
 .counter-title{font-size:11px;color:#bbb;}
-.counter-value{font-size:18px;font-weight:bold;}
+.counter-value{font-size:15px;font-weight:bold;}
 #searchRow{margin-top:10px;}
 #search{width:100%;padding:10px;border-radius:8px;background:#111;border:1px solid #444;color:white;box-sizing:border-box;}
-#buttonRow{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
-#buttonRow button{flex:1;padding:10px;font-size:11px;color:#bbb;border-radius:10px;background:#000;border:1px solid #444;font-weight:bold;}
+#buttonRow{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;}
+#buttonRow button{flex:1;padding:6px 4px;font-size:10px;color:#bbb;border-radius:8px;background:#000;border:1px solid #444;font-weight:bold;height:32px;}
 
 #tableContainer{
   position:fixed;
@@ -59,8 +59,8 @@ border:1px solid #444;background:#1a1a1a;color:white;
 }
 #popupButtons,#saleButtons{display:flex;gap:8px;margin-top:10px;}
 #popupButtons button,#saleButtons button{
-flex:1;padding:11px;border-radius:10px;
-background:#000;border:1px solid #444;color:white;font-weight:bold;
+flex:1;padding:7px;border-radius:8px;
+background:#000;border:1px solid #444;color:white;font-weight:bold;font-size:11px;height:34px;
 }
 img.preview{max-width:100%;border-radius:8px;margin-top:10px;}
 #salesHistoryPopup h3{margin-top:0;font-size:16px;}
@@ -107,7 +107,7 @@ img.preview{max-width:100%;border-radius:8px;margin-top:10px;}
   <div id="searchRow"><input id="search" placeholder="Suchen …"></div>
 
   <div id="buttonRow">
-    <button id="btnAdd">Artikel anlegen</button>
+    <button id="btnAdd">+ Artikel</button>
     <button id="btnExport">Sichern</button>
     <button id="btnImport">Laden</button>
     <button id="btnPDF">PDF</button>
