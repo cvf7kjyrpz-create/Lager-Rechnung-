@@ -404,7 +404,16 @@ btnCancel.onclick = () => {
   editIndex = -1;
 };
 
+
 btnSave.onclick = () => {
+  function finalizeSave(){
+    localStorage.setItem("lagerData", JSON.stringify(artikel));
+    popup.style.display = "none";
+    editIndex = -1;
+    renderTable();
+    autoBackup("speichern"); // ✅ Datei-Export nach erfolgreichem Speichern
+  }
+
   if (editIndex === -1){
     const nextNr     = commitNextArtNr();
     const artnrInput = p_artnr.value.trim();
@@ -430,23 +439,18 @@ btnSave.onclick = () => {
       r.onload = e => {
         obj.bild = e.target.result;
         artikel.push(obj);
-        localStorage.setItem("lagerData", JSON.stringify(artikel));
-        popup.style.display = "none";
-        editIndex = -1;
-        renderTable();
+        finalizeSave();
       };
       r.readAsDataURL(file);
     } else {
       artikel.push(obj);
-      localStorage.setItem("lagerData", JSON.stringify(artikel));
-      popup.style.display = "none";
-      editIndex = -1;
-      renderTable();
+      finalizeSave();
     }
 
   } else {
     const alt = artikel[editIndex];
     const artnrInput = p_artnr.value.trim();
+
     const obj = {
       artnr:  artnrInput || alt.artnr,
       name:   p_name.value.trim(),
@@ -467,20 +471,15 @@ btnSave.onclick = () => {
       r.onload = e => {
         obj.bild = e.target.result;
         artikel[editIndex] = obj;
-        localStorage.setItem("lagerData", JSON.stringify(artikel));
-        popup.style.display = "none";
-        editIndex = -1;
-        renderTable();
+        finalizeSave();
       };
       r.readAsDataURL(file);
     } else {
       artikel[editIndex] = obj;
-      localStorage.setItem("lagerData", JSON.stringify(artikel));
-      popup.style.display = "none";
-      editIndex = -1;
-      renderTable();
+      finalizeSave();
     }
   }
+};
 };
 
 function pushNew(obj){
