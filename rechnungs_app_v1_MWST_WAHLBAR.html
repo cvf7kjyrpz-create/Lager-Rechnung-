@@ -5,11 +5,13 @@
 <title>Rechnungs-App</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
+html, body { overflow-x: hidden; max-width: 100%; }
+
 body{margin:0;font-family:Arial,sans-serif;background:#000;color:#fff}
 header{padding:10px;border-bottom:2px solid #333}
-input,textarea,button{background:#111;color:#fff;border:1px solid #444;border-radius:6px;padding:6px;font-size:12px}
+input,textarea{background:#111;color:#fff;border:1px solid #444;border-radius:6px;padding:6px 8px;font-size:12px;max-width:100%;box-sizing:border-box;margin-bottom:8px} button{background:#000;color:#fff;border:1px solid #444;border-radius:6px;padding:6px;font-size:12px} /*{background:#111;color:#fff;border:1px solid #444;border-radius:6px;padding:6px;font-size:12px}
 button{cursor:pointer}
-.row{display:flex;gap:8px;flex-wrap:wrap}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .col{flex:1}
 h2{margin:6px 0}
 table{width:100%;border-collapse:collapse;margin-top:10px}
@@ -27,6 +29,7 @@ th{color:#bbb;background:#111;position:sticky;top:0}
 <body>
 
 <header class="row">
+  <button onclick="importFromBuffer()">Aus Verkauf übernehmen</button>
   <button onclick="showEditor()">Neue Rechnung</button>
   <input id="search" placeholder="Rechnung suchen…" oninput="renderList()">
 </header>
@@ -87,7 +90,7 @@ th{color:#bbb;background:#111;position:sticky;top:0}
       <div class="row">
         <input id="mwst" value="19" onblur="calcTotals()" style="flex:1">
         <label class="small" style="display:flex;align-items:center;gap:4px;">
-          <input type="checkbox" id="mwstToggle" onchange="toggleMwst()"> MwSt aktiv
+          <input type="checkbox" id="mwstToggle" onchange="toggleMwst()"> Kleinunternehmen
         </label>
       </div>
     </div>
@@ -166,8 +169,8 @@ function calcTotals(){
   });
 
   const ship = parseFloat(document.getElementById("shipping").value)||0;
-  const mwActive = document.getElementById('mwstToggle')?.checked;
-  const mw = mwActive ? (parseFloat(document.getElementById("mwst").value)||0) : 0;
+  const klein = document.getElementById('mwstToggle')?.checked;
+  const mw = klein ? 0 : (parseFloat(document.getElementById("mwst").value)||0);
 
   document.getElementById("subSum").innerText = sum.toFixed(2);
   const mwVal = sum * mw / 100;
@@ -247,26 +250,65 @@ function editInv(i){
   calcTotals();
 }
 
-const pending = JSON.parse(localStorage.getItem("pendingInvoiceData") || "null");
-if(pending){
-  showEditor();
-  addRow(pending);
-  localStorage.removeItem("pendingInvoiceData");
-}else{
-  showList();
-  setTimeout(applyMwstSetting, 0);
-}
+showList();
+setTimeout(applyMwstSetting, 0);
+
 
 function toggleMwst(){
-  const on = document.getElementById('mwstToggle').checked;
-  localStorage.setItem('mwstActive', on ? "1" : "0");
+
+
+  const klein = document.getElementById('mwstToggle').checked; // Kleinunternehmen
+  localStorage.setItem('kleinActive', klein ? "1" : "0");
+
+  if(klein){
+    document.getElementById("mwst").value = 0;
+    document.getElementById("mwst").disabled = true;
+  } else {
+    document.getElementById("mwst").disabled = false;
+    if(!document.getElementById("mwst").value || document.getElementById("mwst").value == "0"){
+      document.getElementById("mwst").value = 19;
+    }
+  }
+
   calcTotals();
 }
 
+
+
 function applyMwstSetting(){
-  const on = localStorage.getItem('mwstActive') === "1";
+  const klein = localStorage.getItem('kleinActive') === "1";
   const t = document.getElementById('mwstToggle');
-  if(t) t.checked = on;
+  if(t) t.checked = klein;
+
+  if(klein){
+    document.getElementById("mwst").value = 0;
+    document.getElementById("mwst").disabled = true;
+  } else {
+    document.getElementById("mwst").disabled = false;
+  }
+}
+
+
+function importFromBuffer(){
+  const data = JSON.parse(localStorage.getItem("invoiceBuffer") || "null");
+  if(!data){
+    alert("Kein Verkauf in der Zwischenablage.");
+    return;
+  }
+
+  showEditor();
+  addRow({
+    name: data.name,
+    menge: data.menge,
+    preis: data.preis
+  });
+
+  if(data.versand){
+    document.getElementById("shipping").value = data.versand;
+  }
+
+  // Zwischenspeicher bleibt erhalten, damit mehrere Artikel nacheinander übernommen werden können
+  calcTotals();
 }
 
 </script>
