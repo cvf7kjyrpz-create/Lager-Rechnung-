@@ -783,27 +783,62 @@ btnSaleSend.onclick = () => {
   if(currentSaleIndex === -1) return;
 
   const a = artikel[currentSaleIndex];
+
   const mengeV = parseInt(s_menge.value) || 0;
   const preisV = parseFloat(s_preis.value) || 0;
-  const versK  = parseFloat(s_versandKunde?.value || 0) || 0;
-  const datV   = s_datum?.value || "";
+  const versK  = parseFloat(s_versandKunde.value) || 0;
+  const versC  = parseFloat(s_versandKosten.value) || 0;
+  const datV   = s_datum.value;
 
-  if(mengeV <= 0 || preisV <= 0){
-    alert("Bitte Menge und Preis korrekt eingeben.");
+  if(mengeV <= 0 || mengeV > a.menge || preisV <= 0){
+    alert("Bitte gültige Verkaufsdaten eingeben.");
     return;
   }
 
-  const buffer = {
+  const umsatz = mengeV * preisV + versK;
+  const einkaufKosten = mengeV * (a.preis || 0);
+  const gewinn = umsatz - einkaufKosten - versC;
+
+  const sale = {
+    artnr: a.artnr,
+    name:  a.name,
+    menge: mengeV,
+    verkaufPreis: preisV,
+    versandKunde: versK,
+    versandKosten: versC,
+    einkaufPreis: a.preis || 0,
+    datum: datV,
+    umsatz,
+    gewinn
+  };
+
+  sales.push(sale);
+  localStorage.setItem("lagerSales", JSON.stringify(sales));
+
+  // ✅ Bestand korrekt reduzieren
+  a.menge -= mengeV;
+  if(a.menge < 0) a.menge = 0;
+  localStorage.setItem("lagerData", JSON.stringify(artikel));
+
+  // ✅ Zwischenspeicher als LIST (mehrere Artikel)
+  let buffer = JSON.parse(localStorage.getItem("invoiceBuffer") || "[]");
+  if(!Array.isArray(buffer)) buffer = [];
+
+  buffer.push({
     name: a.name,
     menge: mengeV,
     preis: preisV,
     versand: versK,
     datum: datV
-  };
+  });
 
   localStorage.setItem("invoiceBuffer", JSON.stringify(buffer));
-  alert("Verkauf gespeichert & kopiert ✅");
+
   salePopup.style.display = "none";
+  currentSaleIndex = -1;
+  renderTable();
+
+  alert("Verkauf verbucht & in Rechnung kopiert ✅");
 };
 
 </script>
