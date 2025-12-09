@@ -299,8 +299,8 @@ function renderTable(){
       <td>${a.ort || ""}</td>
       <td>${a.datum ? formatDate(a.datum) : ""}</td>
       <td class="iconCell">
-        <span onclick="viewImg(${i})">📷</span>
-        <span onclick="viewNote(${i})">📝</span>
+        <span style="opacity:${a.bild ? 1 : 0.3}" onclick="viewImg(${i})">📷</span>
+        <span style="opacity:${a.notiz ? 1 : 0.3}" onclick="viewNote(${i})">📝</span>
         <span onclick="editArtikel(${i})">✏️</span>
         <span onclick="sellArtikel(${i})">🛒</span>
         <span class="delete" onclick="del(${i})">🗑</span>
@@ -456,7 +456,16 @@ btnSave.onclick = () => {
     const file = p_bild.files[0];
     if(file){
       const r = new FileReader();
-      r.onload = e => { obj.bild = e.target.result; applyEdit(obj); };
+      
+      r.onload = e => {
+        obj.bild = e.target.result;
+        if(editIndex === -1){
+          pushNew(obj);
+        } else {
+          applyEdit(obj);
+        }
+      };
+    
       r.readAsDataURL(file);
     } else {
       applyEdit(obj);
