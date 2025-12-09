@@ -404,17 +404,10 @@ btnCancel.onclick = () => {
   editIndex = -1;
 };
 
-
 btnSave.onclick = () => {
-  function finalizeSave(){
-    localStorage.setItem("lagerData", JSON.stringify(artikel));
-    popup.style.display = "none";
-    editIndex = -1;
-    renderTable();
-    autoBackup("speichern"); // ✅ Datei-Export nach erfolgreichem Speichern
-  }
-
+  autoBackup("speichern");
   if (editIndex === -1){
+    // neuer Artikel
     const nextNr     = commitNextArtNr();
     const artnrInput = p_artnr.value.trim();
     const artnrFinal = artnrInput || nextNr;
@@ -436,21 +429,16 @@ btnSave.onclick = () => {
     const file = p_bild.files[0];
     if(file){
       const r = new FileReader();
-      r.onload = e => {
-        obj.bild = e.target.result;
-        artikel.push(obj);
-        finalizeSave();
-      };
+      r.onload = e => { obj.bild = e.target.result; pushNew(obj); };
       r.readAsDataURL(file);
     } else {
-      artikel.push(obj);
-      finalizeSave();
+      pushNew(obj);
     }
 
   } else {
+    // Bearbeiten
     const alt = artikel[editIndex];
     const artnrInput = p_artnr.value.trim();
-
     const obj = {
       artnr:  artnrInput || alt.artnr,
       name:   p_name.value.trim(),
@@ -468,18 +456,21 @@ btnSave.onclick = () => {
     const file = p_bild.files[0];
     if(file){
       const r = new FileReader();
+      
       r.onload = e => {
         obj.bild = e.target.result;
-        artikel[editIndex] = obj;
-        finalizeSave();
+        if(editIndex === -1){
+          pushNew(obj);
+        } else {
+          applyEdit(obj);
+        }
       };
+    
       r.readAsDataURL(file);
     } else {
-      artikel[editIndex] = obj;
-      finalizeSave();
+      applyEdit(obj);
     }
   }
-};
 };
 
 function pushNew(obj){
@@ -817,6 +808,94 @@ btnSaleSend.onclick = () => {
 
 </script>
 
+
+
+<script>
+// ✅ SAFER OVERRIDE: Speichern → immer direkt übernehmen + Maske schließen + Backup
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btnSave");
+  if(!btn) return;
+
+  btn.onclick = () => {
+
+    function finalizeSave(){
+      localStorage.setItem("lagerData", JSON.stringify(artikel));
+      popup.style.display = "none";
+      editIndex = -1;
+      renderTable();
+      if(typeof autoBackup === "function"){
+        autoBackup("speichern"); // ✅ iOS-Datei-Export wieder aktiv
+      }
+    }
+
+    if (editIndex === -1){
+      const nextNr     = commitNextArtNr();
+      const artnrInput = p_artnr.value.trim();
+      const artnrFinal = artnrInput || nextNr;
+
+      const obj = {
+        artnr:  artnrFinal,
+        name:   p_name.value.trim(),
+        menge: +p_menge.value || 0,
+        groesse:p_groesse.value.trim(),
+        preis: +p_preis.value || 0,
+        ort:    p_ort.value.trim(),
+        datum:  p_datum.value,
+        zustand:p_zustand.value || "Neu",
+        notiz:  p_notiz.value.trim(),
+        bild:   "",
+        markiert:false
+      };
+
+      const file = p_bild.files[0];
+      if(file){
+        const r = new FileReader();
+        r.onload = e => {
+          obj.bild = e.target.result;
+          artikel.push(obj);
+          finalizeSave();
+        };
+        r.readAsDataURL(file);
+      } else {
+        artikel.push(obj);
+        finalizeSave();
+      }
+
+    } else {
+      const alt = artikel[editIndex];
+      const artnrInput = p_artnr.value.trim();
+
+      const obj = {
+        artnr:  artnrInput || alt.artnr,
+        name:   p_name.value.trim(),
+        menge: +p_menge.value || 0,
+        groesse:p_groesse.value.trim(),
+        preis: +p_preis.value || 0,
+        ort:    p_ort.value.trim(),
+        datum:  p_datum.value,
+        zustand:p_zustand.value || alt.zustand || "Neu",
+        notiz:  p_notiz.value.trim(),
+        bild:   alt.bild || "",
+        markiert: alt.markiert || false
+      };
+
+      const file = p_bild.files[0];
+      if(file){
+        const r = new FileReader();
+        r.onload = e => {
+          obj.bild = e.target.result;
+          artikel[editIndex] = obj;
+          finalizeSave();
+        };
+        r.readAsDataURL(file);
+      } else {
+        artikel[editIndex] = obj;
+        finalizeSave();
+      }
+    }
+  };
+});
+</script>
 
 </body>
 </html>
