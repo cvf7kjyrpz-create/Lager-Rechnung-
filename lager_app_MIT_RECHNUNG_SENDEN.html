@@ -172,7 +172,7 @@ img.preview{max-width:100%;border-radius:8px;margin-top:10px;}
   <div class="popup-row"><label>Eigene Versandkosten (€)</label><input type="number" id="s_versandKosten" step="0.01"></div>
   <div class="popup-row"><label>Verkaufsdatum</label><input type="date" id="s_datum"></div>
   <div id="saleButtons">
-    <button id="btnSaleSend">An Rechnung senden</button>
+    <button id="btnSaleSend">Speichern & Kopieren</button>
     <button id="btnSaleOk">Verkaufen</button>
     <button id="btnSaleCancel">Abbrechen</button>
   </div>
@@ -772,25 +772,29 @@ function selectRow(i){
 
 btnSaleSend.onclick = () => {
   if(currentSaleIndex === -1) return;
+
   const a = artikel[currentSaleIndex];
   const mengeV = parseInt(s_menge.value) || 0;
   const preisV = parseFloat(s_preis.value) || 0;
+  const versK  = parseFloat(s_versandKunde?.value || 0) || 0;
+  const datV   = s_datum?.value || "";
 
   if(mengeV <= 0 || preisV <= 0){
     alert("Bitte Menge und Preis korrekt eingeben.");
     return;
   }
 
-  const pending = {
+  const buffer = {
     name: a.name,
     menge: mengeV,
-    preis: preisV
+    preis: preisV,
+    versand: versK,
+    datum: datV
   };
 
-  localStorage.setItem("pendingInvoiceData", JSON.stringify(pending));
-
+  localStorage.setItem("invoiceBuffer", JSON.stringify(buffer));
+  alert("Verkauf gespeichert & kopiert ✅");
   salePopup.style.display = "none";
-  window.location.href = "rechnungs_app_v1_MWST_WAHLBAR.html";
 };
 
 </script>
